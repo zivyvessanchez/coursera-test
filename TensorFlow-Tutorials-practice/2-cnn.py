@@ -78,3 +78,35 @@ def new_weights(shape):
 
 def new_biases(length):
     return tf.Variable(tf.constant(0.05, shape=[length]))
+
+def new_conv_layer(input,               # The previous layer
+                   num_input_channels,  # Num. channels in prev. layer
+                   filter_size,         # Width and height of each filter
+                   num_filters,         # Number of filters
+                   use_pooling=True):   # Use 2x2 max-pooling
+
+    # Shape of filter-weights for the convolution
+    shape = [filter_size, filter_size, num_input_channels, num_filters]
+
+    # Create new weights/filters with given shape
+    weights = new_weights(shape=shape)
+
+    # Create new biases, one for each fliter
+    biases = new_biases(length=num_filters)
+
+    # Create the TensorFlow operation for convolution.
+    # Note the strides are set to 1 in all dimensions.
+    # The first and last stride must always be 1,
+    # because the first is for the image-number and
+    # the last is for the input-channel.
+    # But e.g. strides=[1, 2, 2, 1] would mean that the filter
+    # is moved 2 pixels across the x- and y-axis of the image.
+    # The padding is set to 'SAME' which means the input image
+    # is padded with zeroes so the size of the output is the same.
+    layer = tf.nn.conv2d(input=input,
+                         filter=weights,
+                         stride=[1,1,1,1]
+                         padding='SAME')
+
+    # Add biases to the convolution, to each filter-channel.
+    layer += biases
