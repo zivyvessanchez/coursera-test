@@ -105,7 +105,7 @@ def new_conv_layer(input,               # The previous layer
     # is padded with zeroes so the size of the output is the same.
     layer = tf.nn.conv2d(input=input,
                          filter=weights,
-                         stride=[1,1,1,1]
+                         strides=[1,1,1,1],
                          padding='SAME')
 
     # Add biases to the convolution, to each filter-channel.
@@ -170,7 +170,7 @@ def new_fc_layer(input,         # The Previous layer
 
     # Calculate the layer as the matrix multiplication of
     # the input and weights, and then add the bias-values.
-    layer = tf.matmul(inputs, weights) + biases
+    layer = tf.matmul(input, weights) + biases
 
     # Use ReLU?
     if use_relu:
@@ -204,7 +204,7 @@ layer_conv2, weights_conv2 = \
 layer_flat, num_features = flatten_layer(layer_conv2)
 layer_fc1 = new_fc_layer(input=layer_flat,
                          num_inputs=num_features,
-                         num_outputs_fc_size,
+                         num_outputs=fc_size,
                          use_relu=True)
 
 
@@ -368,4 +368,47 @@ def print_test_accuracy(show_example_errors=False,
         # The ending index for the next batch is denoted j.
         j = min(i + test_batch_size, num_test)
 
-        
+        # Get the images from the test-set between index i and j.
+        images = data.test.images[i:j, :]
+
+        # Get the associated labels.
+        labels = data.test.labels[i:j, :]
+
+        # Create a feed-dict with these images and labels.
+        feed_dict = {x: images,
+                     y_true: labels}
+
+        # Calculate the predicted class using TensorFlow.
+        cls_pred[i:j] = session.run(y_pred_cls, feed_dict=feed_dict)
+
+        # Set the start-index for the next batch to the
+        # end-index of the current batch.
+        i = j
+
+    # Convenience variable for the true class-numbers of the test-set.
+    cls_true = data.test.cls
+
+    # Create a boolean array whether each image is csaorrectly classified.
+    correct = (cls_true == cls_pred)
+
+    # Calculate the number of correctly classified images.
+    # When summing a boolean array, False means 0 and True means 1.
+    correct_sum = correct.sum()
+
+    # Classification accuracy is the number of correctly classified
+    # images divided by the total number of images in the test-set.
+    acc = float(correct_sum) / num_test
+
+    # Print the accuracy.
+    msg = "Accuracy on Test-Set: {0:.1%} ({1} / {2})"
+    print(msg.format(acc, correct_sum, num_test))
+
+    # Plot some examples of mis-classifications, if desired.
+    if show_example_errors:
+        print("Example errors:")
+        plot_example_errors(cls_pred=cls_pred, correct=correct)
+
+    # Plot the confusion matrix, if desired.
+    if show_confusion_matrix:
+        print("Confusion Matrix:")
+        plot_confusion_matrix(cls_pred=cls_pred)
