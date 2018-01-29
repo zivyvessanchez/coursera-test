@@ -92,3 +92,16 @@ model.add(Flatten())
 model.add(Dense(128, activation='relu'))
 # Second fully-connected layer with ReLU
 model.add(Dense(num_class, activation='softmax'))
+
+from tensorflow.python.keras.optimizers import Adam
+optimizer = Adam(lr=1e-3)
+model.compile(optimizer=optimizer,
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+model.fit(x=data.train.images,
+          y=data.train.labels,
+          epochs=1, batch_size=128)
+result = model.evaluate(x=data.test.images,
+                        y=data.test.labels)
+for name, value in zip(model.metrics_names, result):
+    print(name, value)
