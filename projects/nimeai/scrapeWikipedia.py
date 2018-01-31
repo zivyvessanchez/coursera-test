@@ -1,12 +1,11 @@
 # _*_ coding:utf-8 _*_
+import os
+import requests
+import codecs
+import re
+from bs4 import BeautifulSoup
 
 def startScrapeWikipedia():
-    import os
-    import requests
-    import codecs
-    import re
-    from bs4 import BeautifulSoup
-
     wikiUrl = 'https://en.wikipedia.org'
     url = wikiUrl + '/w/index.php?title=Special:AllPages'
     fileIdx = 0
@@ -18,10 +17,6 @@ def startScrapeWikipedia():
     maxIdx = 25000 # max number of entries per file
     totalTitles = 0
     totalUrls = 0
-
-    # delete wikiPages.
-    #if os.path.exists(filename):
-    #    os.remove(filename)
     
     #for count in range(0,10):
     while not stop:
@@ -84,3 +79,9 @@ def startScrapeWikipedia():
             idx = 0
             fileIdx += 1
             filename = filenamePrefix + str(fileIdx) + filenameSuffix
+
+def main():
+    startScrapeWikipedia()
+
+if __name__ == '__main__':
+    main()
