@@ -85,6 +85,8 @@ def scrape(articleName, fileName = ''):
         outfile.write(title.text + '\n\n' + str(contentText))
         outfile.close()
 
+    return str(contentText)
+
 def main():
     if (len(sys.argv) < 2):
         print("Usage: {0} <wikipedia article title> [<output filename>]".format(
