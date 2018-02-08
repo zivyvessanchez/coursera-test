@@ -8,6 +8,7 @@ import collections
 import random
 
 from tempfile import gettempdir
+from util import clean_str
 from scraper import scrape
 from sklearn.manifold import TSNE
 
@@ -17,6 +18,7 @@ data = ''
 data_index = 0
 vocab_size = 0
 reverse_dictionary = ''
+itr = 0
 
 def build_dataset(words, n_words):
     global data
@@ -76,7 +78,7 @@ def generate_batch(batch_size, num_skips, skip_window):
     return batch, labels
 
 def train(initial_embeddings=None):
-    global vocab_size, reverse_dictionary
+    global vocab_size, reverse_dictionary, itr
     batch_size = 128
     embedding_size = 128  # Dimension of the embedding vector.
     skip_window = 1       # How many words to consider left and right.
@@ -183,7 +185,7 @@ def train(initial_embeddings=None):
         plot_only = 500
         low_dim_embs = tsne.fit_transform(final_embeddings[:plot_only, :])
         labels = [reverse_dictionary[i] for i in range(plot_only)]
-        plot_with_labels(low_dim_embs, labels, 'tsne.png')
+        plot_with_labels(low_dim_embs, labels, 'tsne{}.png'.format(itr))
 
     except ImportError as ex:
         print('Please install sklearn, matplotlib, and scipy to show embeddings.')
@@ -206,41 +208,73 @@ def plot_with_labels(low_dim_embs, labels, filename):
 
     plt.savefig(filename)
 
-def main():
-    global vocab_size, reverse_dictionary
+def main(num_articles=10):
+    global vocab_size, reverse_dictionary, itr
+    rand_word = ''
+    embedding_cache = None
+    vocab_size = 0
+    vocab_cache = None
+    
     if (len(sys.argv) < 2):
         print("Usage: {0} <wikipedia article title> [<output filename>]".format(
             os.path.basename(__file__)))
         return
 
-    # Scrape wiki page
-    print("Scraping " + sys.argv[1])
-    if(len(sys.argv) >= 3):
-        text = scrape(sys.argv[1], sys.argv[2])
-    else:
-        text = scrape(sys.argv[1])
+    for i in range(num_articles):
+        itr = i
+        print(itr)
+        while vocab_size < 10:
+            # Scrape wiki page
+            rand_word = vocab[random.randint(0,len(vocab)-1)] if i > 0 else sys.argv[1]
+            print("Scraping " + rand_word)
+            if(len(sys.argv) >= 3):
+                text = scrape(rand_word, sys.argv[2])
+            else:
+                text = scrape(rand_word)
 
-    # Preprocess text before lemmatization
-    
+            # Preprocess text before lemmatization
+            text = clean_str(text)
 
-    # Getvocab of page
-    vocab = text.split()
-    vocab_size = len(vocab)
+            # Get vocab of page
+            vocab = text.split()
+            vocab_size = len(vocab)
 
-    # Build dataset using vocab
-    data, count, dictionary, reverse_dictionary = \
-          build_dataset(vocab,vocab_size)
+            # Early out if starting article is invalid, else combine cache and current
+            if vocab_size < 10 and i == 0:
+                print("Initial article is invalid! Exiting...")
+                return
+            elif i > 0:
+                for word in vocab:
+                    if word not in vocab_cache:
+                        vocab_cache.append(word)
+                vocab = vocab_cache
+                vocab_size = len(vocab)
 
-    # Generate batches for training
-    batch, labels = generate_batch(batch_size=8,
-                                   num_skips=2,
-                                   skip_window=1)
-    for i in range(8):
-        print(batch[i], reverse_dictionary[batch[i]],
-              '->', labels[i, 0], reverse_dictionary[labels[i, 0]])
+        # Build dataset using vocab
+        data, count, dictionary, reverse_dictionary = \
+              build_dataset(vocab,vocab_size)
 
-    embeddings = train()
-    type(embeddings)
+        # Generate batches for training
+        batch, labels = generate_batch(batch_size=8,
+                                       num_skips=2,
+                                       skip_window=1)
+        for j in range(8):
+            print(batch[i], reverse_dictionary[batch[j]],
+                  '->', labels[j, 0], reverse_dictionary[labels[j, 0]])
+
+        if embedding_cache is not None:
+            embeddings = train(embedding_cache)
+        else:
+            embeddings = train()
+
+        embedding_cache = embeddings
+        if i == 0:
+            vocab_cache = vocab
+        else:
+            for word in vocab:
+                if word not in vocab_cache:
+                    vocab_cache.append(word)
+        vocab_size = 0  # Reset
 
 if __name__ == "__main__":
-    main()
+    main(10)

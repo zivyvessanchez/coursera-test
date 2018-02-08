@@ -1,5 +1,22 @@
 import numpy as np
 import cv2
+import win32Util
+from mss import mss
+
+def getWindowRect(wildcard):
+    w = win32Util.Window(wildcard)
+    rect = w.getWindowRect()
+    return rect
+
+def getScreen(rect):
+    sct = mss()
+    x = rect[0]
+    y = rect[1]
+    w = rect[2] - x
+    h = rect[3] - y
+    monitor = {'top': y, 'left': x, 'width': w, 'height': h}
+    grab = sct.grab(monitor)
+    return grab
 
 def getVSTM(frameArray):
     out = None
@@ -55,17 +72,31 @@ def read(source=0):
         if len(frames) >= max_frames:
             frames.pop(0)
         frames.append(frame)
-        vstm = getVSTM(frames)
         
         # Display the resulting frame
         cv2.imshow('frame', frame)
-        cv2.imshow('vstm', vstm)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
     # When done, release the capture
     cap.release()
-    cv2.destroyAllWindows()    
+    cv2.destroyAllWindows()
+
+def main(wildcard):
+    window_name = '2hu'
+    cv2.namedWindow(window_name, cv2.WINDOW_AUTOSIZE)
+    sct = mss()
+    rect = getWindowRect(wildcard)
+    while(True):
+        
+        grab = getScreen(rect)
+        #grab = sct.grab(sct.monitors[0])
+        img = np.array(grab)
+        cv2.imshow(window_name,img)
+        k = cv2.waitKey(1) & 0xff
+        if k == ord('q'):
+            break
+    cv2.destroyAllWindows()
 
 if __name__ == '__main__':
-    read()
+    main('.*Touhou.*')
