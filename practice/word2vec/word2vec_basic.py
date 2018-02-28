@@ -61,7 +61,25 @@ def read_data(filename):
     data = tf.compat.as_str(f.read(f.namelist()[0])).split()
   return data
 
-vocabulary = read_data(filename)
+with open('wiki.en.text', 'r', encoding='utf-8') as f:
+  i = 0
+  i_max = 20
+  corpus = ''
+
+  # Concatenate lines into a single string
+  for line in f:
+      if(i_max >= 10 and i % int(i_max/10) == 0):
+          print("Line {0}\ttotal len: {1},\tadded {2},\tnew total: {3}"\
+                .format(i, len(corpus), len(line), len(corpus) + len(line)))
+      corpus += line
+      i += 1
+      if i >= i_max:
+          break
+
+  # Transform to lower case
+  corpus = corpus.lower()
+
+vocabulary = corpus.split()
 print('Data size', len(vocabulary))
 
 # Step 2: Build the dictionary and replace rare words with UNK token.
@@ -120,7 +138,8 @@ def generate_batch(batch_size, num_skips, skip_window):
       batch[i * num_skips + j] = buffer[skip_window]
       labels[i * num_skips + j, 0] = buffer[context_word]
     if data_index == len(data):
-      buffer[:] = data[:span]
+      for word in data[:span]:
+        buffer.append(word)
       data_index = span
     else:
       buffer.append(data[data_index])
@@ -201,7 +220,10 @@ with graph.as_default():
   init = tf.global_variables_initializer()
 
 # Step 5: Begin training.
-num_steps = 100001
+num_steps = 10001
+
+# Create Saver
+saver = tf.train.Saver()
 
 with tf.Session(graph=graph) as session:
   # We must initialize all variables before we use them.
@@ -226,8 +248,11 @@ with tf.Session(graph=graph) as session:
       print('Average loss at step ', step, ': ', average_loss)
       average_loss = 0
 
+    # Save session to file
+    save_path = saver.save(sess, "/tmp/model.ckpt")
+    
     # Note that this is expensive (~20% slowdown if computed every 500 steps)
-    if step % 10000 == 0:
+    '''if step % 10000 == 0:
       sim = similarity.eval()
       for i in xrange(valid_size):
         valid_word = reverse_dictionary[valid_examples[i]]
@@ -237,7 +262,7 @@ with tf.Session(graph=graph) as session:
         for k in xrange(top_k):
           close_word = reverse_dictionary[nearest[k]]
           log_str = '%s %s,' % (log_str, close_word)
-        print(log_str)
+        print(log_str)'''
   final_embeddings = normalized_embeddings.eval()
 
 # Step 6: Visualize the embeddings.

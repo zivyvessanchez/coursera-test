@@ -1,4 +1,5 @@
 import re
+import gensim
 
 def clean_str(string):
     """
@@ -54,11 +55,11 @@ def tokenize(text, lowercase=False, deacc=False, encoding='utf8', errors="strict
     [u'Nic', u'nemuze', u'letet', u'rychlosti', u'vyssi', u'nez', u'tisic', u'kilometru', u'za', u'sekundu']
     """
     lowercase = lowercase or to_lower or lower
-    text = to_unicode(text, encoding, errors=errors)
+    text = gensim.utils.to_unicode(text, encoding, errors=errors)
     if lowercase:
         text = text.lower()
     if deacc:
-        text = deaccent(text)
+        text = gensim.utils.deaccent(text)
     return simple_tokenize(text)
 
 

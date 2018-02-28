@@ -30,8 +30,9 @@ def getVSTM(frameArray):
         if i == 0:
             out = frameArray[i]
         else:
-            #out = cv2.addWeighted(out,0.8,frameArray[i],0.2,0)
-            out = cv2.bitwise_and(out,frameArray[i])
+            #out = cv2.addWeighted(out,0.5,frameArray[i],0.5,0)
+            out = cv2.bitwise_xor(out,frameArray[i])
+            out = cv2.bitwise_not(out)
     
     return out
 
@@ -65,16 +66,18 @@ def readGauss(source=0):
 def read(source=0):
     cap = cv2.VideoCapture(source)
     frames = []
-    max_frames = 20
+    max_frames = 8
     while(True):
         # Capture frame-by-frame
         ret, frame = cap.read()
         if len(frames) >= max_frames:
             frames.pop(0)
         frames.append(frame)
+        vstm = getVSTM(frames)
         
         # Display the resulting frame
         cv2.imshow('frame', frame)
+        cv2.imshow('vstm', vstm)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
@@ -83,16 +86,32 @@ def read(source=0):
     cv2.destroyAllWindows()
 
 def main(wildcard):
+    # Screen grab setup
     window_name = '2hu'
     cv2.namedWindow(window_name, cv2.WINDOW_AUTOSIZE)
     sct = mss()
     rect = getWindowRect(wildcard)
+
+    # VSTM setup
+    frames = []
+    max_frames = 6
+    
     while(True):
-        
+        # Screen grab
         grab = getScreen(rect)
-        #grab = sct.grab(sct.monitors[0])
         img = np.array(grab)
-        cv2.imshow(window_name,img)
+
+        # VSTM filter
+        # Capture frame-by-frame
+        if len(frames) >= max_frames:
+            frames.pop(0)
+        frames.append(img)
+        vstm = getVSTM(frames)
+
+        # Show
+        #cv2.imshow(window_name,img)
+        cv2.imshow(window_name,vstm)
+        
         k = cv2.waitKey(1) & 0xff
         if k == ord('q'):
             break
@@ -100,3 +119,4 @@ def main(wildcard):
 
 if __name__ == '__main__':
     main('.*Touhou.*')
+    #read('vtest.mkv')
