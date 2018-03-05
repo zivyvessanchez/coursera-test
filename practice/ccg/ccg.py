@@ -65,24 +65,48 @@ def __induce(string=''):
     for s in string_split:
         sentence = nltk.pos_tag(nltk.word_tokenize(s))
         if len(sentence) > 0:
-            sentences_word.append(sentence[0])
-            sentences_pos.append(sentence[1])
+            for word_pos_pair in sentence:
+                sentences_word.append(word_pos_pair[0])
+                sentences_pos.append(word_pos_pair[1])
+    print('sentence_word is {0}'.format(sentences_word))
+    print('sentence_pos is {0}'.format(sentences_pos))
     
     # Perform induction loop n times
     for _ in range(n):
+        print('cur lexicon is {0}'.format(lexicon))
         # s is a single sentence's pos tags
-        for s in sentences_pos:
-            for i in range(len(s)):
-                # First word in sentence
-                if i == 1:
-                    __induceRight(lexicon[s[i]], lexicon[s[i+1]], new_lexicon)
-                # Last word in sentence
-                elif i == (len(s)-1)
-                    __induceLeft(lexicon[s[i]], lexicon[s[i-1]], new_lexicon)
-                # Any other word inside sentence
-                else if CCG_ENG[s[i]] != 'conj':
-                    __induceLeft(lexicon[s[i]], lexicon[s[i-1]], new_lexicon)
-                    __induceRight(lexicon[s[i]], lexicon[s[i+1]], new_lexicon)
+        for i, s in enumerate(sentences_pos):
+            print('s is {0}'.format(s))
+            # First word in sentence
+            if i == 0:
+                print('First word!')
+                __induceRight(
+                    lexicon[sentences_pos[i]],
+                    lexicon[sentences_pos[i+1]],
+                    new_lexicon
+                )
+            # Last word in sentence
+            elif i == (len(sentences_pos)-1):
+                print('Last word!')
+                __induceLeft(
+                    lexicon[sentences_pos[i]],
+                    lexicon[sentences_pos[i-1]],
+                    new_lexicon
+                )
+            # Any other word inside sentence
+            elif sentences_pos[i] in CCG_ENG and \
+                 CCG_ENG[sentences_pos[i]] != 'conj':
+                print('Conj check!')
+                __induceLeft(
+                    lexicon[sentences_pos[i]],
+                    lexicon[sentences_pos[i-1]],
+                    new_lexicon
+                )
+                __induceRight(
+                    lexicon[sentences_pos[i]],
+                    lexicon[sentences_pos[i+1]],
+                    new_lexicon
+                )
         # Update lexicon with new categories
         lexicon.update(new_lexicon)
     
